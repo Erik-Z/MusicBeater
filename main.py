@@ -109,6 +109,15 @@ async def skip(ctx):
         voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
         voice_client.stop()
 
+@bot.command(name='clear', help='Clears the queue')
+async def clear_queue(ctx):
+    if ctx.message.author.voice:
+        server_id = ctx.guild.id
+        queue[server_id] = []
+        url_queue[server_id] = []
+        await ctx.send(f"Queued Cleared.")
+    else:
+        await ctx.send(f"You need to be in a voice channel.")
 
 @bot.event
 async def on_ready():
