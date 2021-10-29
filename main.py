@@ -34,7 +34,7 @@ async def play(ctx, *urls: str):
         voice_channel = ctx.message.author.voice.channel
         voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
         server_id = ctx.guild.id
-        if not server_id in queue:
+        if server_id not in queue:
             queue[server_id] = []
             url_queue[server_id] = []
         if not voice_client:
@@ -64,7 +64,7 @@ async def play(ctx, *urls: str):
                     queue[server_id].append(await YTDLSource.from_url(url, loop=bot.loop))
                 await ctx.send(f"Queued #{len(queue[server_id])}")
     else:
-        await ctx.send("Alden's stupid.")
+        await ctx.send(f"You need to be in a voice channel.")
 
 
 @bot.command(name='nplay', help='Plays a song by name')
@@ -88,6 +88,8 @@ async def nplay(ctx, *title):
             filename = await YTDLSource.from_url(url, loop=bot.loop)
             voice_client.play(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS),
                               after=lambda x: play_queue(voice_client))
+    else:
+        await ctx.send(f"You need to be in a voice channel.")
 
 
 @bot.command(name='queued', help='Shows list of songs currently queued')
@@ -108,6 +110,9 @@ async def skip(ctx):
     if ctx.message.author.voice:
         voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
         voice_client.stop()
+    else:
+        await ctx.send(f"You need to be in a voice channel.")
+
 
 @bot.command(name='clear', help='Clears the queue')
 async def clear_queue(ctx):
@@ -118,6 +123,7 @@ async def clear_queue(ctx):
         await ctx.send(f"Queued Cleared.")
     else:
         await ctx.send(f"You need to be in a voice channel.")
+
 
 @bot.event
 async def on_ready():
