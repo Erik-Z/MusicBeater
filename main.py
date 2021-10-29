@@ -12,16 +12,17 @@ intents = discord.Intents().default()
 client = discord.Client(intents=intents)
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-url_queue = []
-queue = []
+url_queue = {}
+queue = {}
 FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 
 
 def play_queue(voice_client):
-    print(url_queue)
-    if len(queue) != 0:
-        url_queue.pop(0)
-        voice_client.play(discord.FFmpegPCMAudio(queue.pop(0), **FFMPEG_OPTIONS),
+    server_id = voice_client.guild.id
+    print(url_queue[server_id])
+    if len(queue[server_id]) != 0:
+        url_queue[server_id].pop(0)
+        voice_client.play(discord.FFmpegPCMAudio(queue[server_id].pop(0), **FFMPEG_OPTIONS),
                           after=lambda x: play_queue(voice_client))
     else:
         return
@@ -32,14 +33,18 @@ async def play(ctx, *urls: str):
     if ctx.message.author.voice:
         voice_channel = ctx.message.author.voice.channel
         voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+        server_id = ctx.guild.id
+        if not server_id in queue:
+            queue[server_id] = []
+            url_queue[server_id] = []
         if not voice_client:
             await voice_channel.connect()
             voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
         if len(urls) == 1:
             if voice_client.is_playing():
-                url_queue.append(urls[0])
-                queue.append(await YTDLSource.from_url(urls[0], loop=bot.loop))
-                await ctx.send(f"Queued #{len(queue)}")
+                url_queue[server_id].append(urls[0])
+                queue[server_id].append(await YTDLSource.from_url(urls[0], loop=bot.loop))
+                await ctx.send(f"Queued #{len(queue[server_id])}")
             else:
                 filename = await YTDLSource.from_url(urls[0], loop=bot.loop)
                 voice_client.play(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS),
@@ -47,45 +52,51 @@ async def play(ctx, *urls: str):
         else:
             if voice_client.is_playing():
                 for url in urls:
-                    url_queue.append(url)
-                    queue.append(await YTDLSource.from_url(url, loop=bot.loop))
-                await ctx.send(f"Queued #{len(queue)}")
+                    url_queue[server_id].append(url)
+                    queue[server_id].append(await YTDLSource.from_url(url, loop=bot.loop))
+                await ctx.send(f"Queued #{len(queue[server_id])}")
             else:
                 filename = await YTDLSource.from_url(urls[0], loop=bot.loop)
                 voice_client.play(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS),
                                   after=lambda x: play_queue(voice_client))
                 for url in urls[1:]:
-                    url_queue.append(url)
-                    queue.append(await YTDLSource.from_url(url, loop=bot.loop))
-                await ctx.send(f"Queued #{len(queue)}")
+                    url_queue[server_id].append(url)
+                    queue[server_id].append(await YTDLSource.from_url(url, loop=bot.loop))
+                await ctx.send(f"Queued #{len(queue[server_id])}")
     else:
         await ctx.send("Alden's stupid.")
 
 
 @bot.command(name='nplay', help='Plays a song by name')
 async def nplay(ctx, *title):
-    voice_channel = ctx.message.author.voice.channel
-    voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
-    if not voice_client:
-        await voice_channel.connect()
+    if ctx.message.author.voice:
+        voice_channel = ctx.message.author.voice.channel
         voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
-    url = "https://www.youtube.com/watch?v="+get_url_from_title("+".join(title))
-    if voice_client.is_playing():
-        url_queue.append(url)
-        queue.append(await YTDLSource.from_url(url, loop=bot.loop))
-        await ctx.send(f"Queued #{len(queue)}")
-    else:
-        filename = await YTDLSource.from_url(url, loop=bot.loop)
-        voice_client.play(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS),
-                          after=lambda x: play_queue(voice_client))
+        server_id = ctx.guild.id
+        if not server_id in queue:
+            queue[server_id] = []
+            url_queue[server_id] = []
+        if not voice_client:
+            await voice_channel.connect()
+            voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+        url = "https://www.youtube.com/watch?v=" + get_url_from_title("+".join(title))
+        if voice_client.is_playing():
+            url_queue[server_id].append(url)
+            queue[server_id].append(await YTDLSource.from_url(url, loop=bot.loop))
+            await ctx.send(f"Queued #{len(queue[server_id])}")
+        else:
+            filename = await YTDLSource.from_url(url, loop=bot.loop)
+            voice_client.play(discord.FFmpegPCMAudio(filename, **FFMPEG_OPTIONS),
+                              after=lambda x: play_queue(voice_client))
 
 
 @bot.command(name='queued', help='Shows list of songs currently queued')
 async def queued(ctx):
-    if len(url_queue) != 0:
+    server_id = ctx.guild.id
+    if len(url_queue[server_id]) != 0:
         queued_list = discord.Embed(title="Queued Songs",
                                     color=discord.Color.blue())
-        for index, video_url in enumerate(url_queue):
+        for index, video_url in enumerate(url_queue[server_id]):
             queued_list.add_field(name=f"{index + 1}.", value=f"{get_title_from_yt_url(video_url)}", inline=False)
         await ctx.send(embed=queued_list)
         return
