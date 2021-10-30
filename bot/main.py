@@ -132,8 +132,8 @@ async def on_ready():
 
 
 if __name__ == '__main__':
-    for cog in os.listdir('./cogs'):
-        if cog.endswith('.py'):
-            bot.load_extension(f'cogs.{cog[:-3]}')
+    # for cog in os.listdir('./cogs'):
+    #     if cog.endswith('.py'):
+    #         bot.load_extension(f'cogs.{cog[:-3]}')
 
     bot.run(DISCORD_TOKEN)
