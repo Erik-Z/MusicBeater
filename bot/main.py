@@ -135,5 +135,5 @@ if __name__ == '__main__':
     for cog in os.listdir('./cogs'):
         if cog.endswith('.py'):
             bot.load_extension(f'cogs.{cog[:-3]}')
-
+    print(os.listdir('.'))
     bot.run(DISCORD_TOKEN)
