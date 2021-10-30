@@ -14,7 +14,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 url_queue = {}
 queue = {}
-FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
+FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn', 'executable': "./bot/ffmpeg.exe"}
 
 
 def play_queue(voice_client):
@@ -132,6 +132,8 @@ async def on_ready():
 
 
 if __name__ == '__main__':
+    print(os.listdir('.'))
+    print(os.listdir('./bot'))
     # Production
     for cog in os.listdir('./bot/cogs'):
     # Local
